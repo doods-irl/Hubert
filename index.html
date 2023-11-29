@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calendar</title>
+    <style>
+    @font-face {
+      font-family: 'Armin';
+      src: url('./assets/ArminSoft-Black.ttf') format('opentype');
+    }
+
+
+    body {
+      background-color: #222;
+      margin: 0;
+      overflow: hidden;
+      color: white;
+    }
+
+    #time-container {
+      width: 30vw;
+      background-color: #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .day-container {
+      height: 100vh;
+      font-family: 'Armin';
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .day-container .time {font-size: 4vw; line-height: 3vw;}
+    .day-container .day {font-size: 5vw;}
+    .day-container .date {font-size: 15vw; line-height: 12vw;}
+    .day-container .month {font-size: 3.5vw;}
+    .day-container .year {font-size: 5vw;}
+
+    .nav-button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 30vw;
+      height: 100px;
+      position: fixed;
+    }
+    
+    #previous-button{top: 0px;}
+    #next-button{bottom: 0px;}
+    #arrow{ width:20px; height: 20px; box-sizing: border-box; }
+    .nav-button .up{ border-left: 3px solid white; border-top: 3px solid white; transform: rotate(45deg);}
+    .nav-button .down{ border-left: 3px solid white; border-top: 3px solid white; transform: rotate(225deg);}
+
+    </style>
+</head>
+<body>
+  <div id="time-container">
+    <div id="previous-button" class="nav-button"><div id="arrow" class="up"></div></div>
+    <div id="next-button" class="nav-button"><div id="arrow" class="down"></div></div>
+    <div id="days-container"></div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

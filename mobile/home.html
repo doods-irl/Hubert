@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <style>
+      @font-face {
+        font-family: 'Armin';
+        src: url('ArminSoft-Black.ttf') format('opentype');
+      }
+
+      body {
+        width: 100%;
+        background-color: #222;
+        margin: 0;
+        color: white;
+        font-family: 'Armin';
+      }
+
+      /* ===== Scrollbar CSS ===== */
+      /* Firefox */
+      * {
+        scrollbar-width: auto;
+        scrollbar-color: #333;
+      }
+
+      /* Chrome, Edge, and Safari */
+      *::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      *::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0);
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background-color: #333;
+        border-radius: 10px;
+      }
+
+      #typeButtons {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+        background-color: black;
+      }
+
+      .navLink {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 22.5%;
+        height: 100px;
+        font-size: xx-large;
+        background-color: none;
+        text-decoration: none;
+        color: white;
+      }
+
+      .navLink:hover {
+        background-color: #333;
+      }
+
+      .exitButton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 10%;
+        height: 100px;
+        font-size: xx-large;
+        background-color: none;
+        text-decoration: none;
+        color: transparent;
+        text-shadow: 0 0 rgb(0, 110, 70);
+      }
+
+      .exitButton:hover {
+        background-color: #333;
+      }
+    </style>
+  </head>
+  <body>  
+    <div id="typeButtons">
+      <a href="/newtask.html" class="navLink">New task</a>
+      <a href="/people.html" class="navLink">People</a>
+    </div>
+  </body>
+</html>

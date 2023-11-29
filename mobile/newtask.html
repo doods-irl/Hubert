@@ -1,0 +1,479 @@
+<html>
+  <head>
+    <style>
+      @font-face {
+        font-family: 'Armin';
+        src: url('ArminSoft-Black.ttf') format('opentype');
+      }
+
+      body {
+        width: 100%;
+        background-color: #222;
+        margin: 0;
+        color: white;
+        font-family: 'Armin';
+      }
+
+      /* ===== Scrollbar CSS ===== */
+      /* Firefox */
+      * {
+        scrollbar-width: auto;
+        scrollbar-color: #333;
+      }
+
+      /* Chrome, Edge, and Safari */
+      *::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      *::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0);
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background-color: #333;
+        border-radius: 10px;
+      }
+
+      #typeButtons {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+        background-color: black;
+      }
+
+      .taskTypeButton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 22.5%;
+        height: 100px;
+        font-size: xx-large;
+        background-color: none;
+      }
+
+      .taskTypeButton:hover {
+        background-color: #333;
+      }
+
+      .exitButton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 10%;
+        height: 100px;
+        font-size: xx-large;
+        background-color: none;
+        text-decoration: none;
+        color: transparent;
+        text-shadow: 0 0 rgb(0, 110, 70);
+      }
+
+      .exitButton:hover {
+        background-color: #333;
+      }
+
+      #formContainer {
+        display: flex;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      #about {
+        font-size: 0.5em;
+        padding: 30px 30px 10px 30px;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 3em;
+      }
+
+      .form-section {
+        width: 90%;
+        font-size: 4em;
+        padding: 0 5%;
+      }
+
+      input[type=text]
+      {
+        height: 2em;
+        border-radius: 20px;
+        font-size: inherit;
+        font-family: inherit;
+        color: white;
+        background-color: #333;
+        padding: 0 20px;
+        margin: 20px 0;
+        border: 3px solid #666;
+      }
+
+      input[type=date], input[type=time], select
+      {
+        width: 100%;
+        height: 2em;
+        border-radius: 20px;
+        font-size: inherit;
+        font-family: inherit;
+        color: white;
+        background-color: #333;
+        padding: 0 20px;
+        margin: 20px 0;
+        border: 3px solid #666;
+      }
+
+      input[type="date"]:before, input[type="time"]:before {
+        content: attr(placeholder) !important;
+        color: #777;
+        margin-right: 0.5em;
+      }
+
+      input{
+        color-scheme: dark;
+      }
+
+      select{
+        -webkit-appearance: none;  /* Remove default arrow in WebKit browsers */
+        -moz-appearance: none;     /* Remove default arrow in Firefox */
+        appearance: none;          /* Standard syntax */
+        color: #777;
+      }
+
+      select option {
+        color: #FFF;
+      }
+
+      select:valid {
+        color: #FFF;
+      }
+
+      input[type=time]
+      {
+        width: 100%;
+        border-radius: 20px;
+        font-size: inherit;
+        font-family: inherit;
+        color: white;
+        background-color: #333;
+        padding: 10px;
+        margin: 20px 0;
+        border: 3px solid #666;
+      }
+
+      input[type=checkbox], input[type=radio] {
+        height: 1em;
+        width: 1em;
+        font-size: xxx-large;
+        margin-right: 20px;
+        accent-color: #006E46;
+        border: 2px solid White;
+      }
+
+      label {
+        margin: 20px 0;
+      }
+
+      .repeatFieldset {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.5s ease-out;
+      }
+
+      fieldset {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 20px;
+      }
+
+      #weekdays {
+        display: flex;
+        flex-direction: row;
+        padding-left: 40px;
+        justify-content: space-evenly;
+      }
+
+      #weekdays label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #weekdays label input[type=checkbox] {
+        margin: 0;
+      }
+
+      button {
+        position: fixed;
+        bottom: 30px;
+        width: 80vw;
+        border-radius: 20px;
+        font-size: inherit;
+        font-family: inherit;
+        color: white;
+        background-color: #006E46;
+        padding: 10px;
+        margin: 20px auto;
+        border: none;
+        left: 50%;
+        translate: -50%;
+      }
+
+      button:hover{
+        filter: brightness(115%);
+      }
+    </style>
+  </head>
+  <body>  
+    <div id="typeButtons">
+      <div id="alarm" class="taskTypeButton">Alarm</div>
+      <div id="reminder" class="taskTypeButton">Reminder</div>
+      <div id="to-do" class="taskTypeButton">To-Do</div>
+      <div id="daily" class="taskTypeButton">Daily</div>
+      <a href="/home.html" class="exitButton">✖️</a>
+    </div>
+
+    <div id="formContainer">
+      <div id="alarmSection" class="form-section" style="display: none;">
+        <div id="about">Alarms set off a chime when the time is hit.</div>
+        <form id="alarmForm">
+          <input type="hidden" name="id">
+          <input type="text" name="title" placeholder="Title">
+          <input type="date" name="date" placeholder="Date">
+          <input type="time" name="time" placeholder="Time">
+          <label><input type="checkbox" class="repeatCheckbox" name="repeat">Repeat</label>
+          <div id="fieldsetContainer" class="repeatFieldset">
+            <fieldset>
+              <legend>Repeat Interval</legend>
+              <label><input type="radio" class="dayRadio" name="repeatInterval" value="day"> Day</label>
+              <div id="weekDays" class="dayContainer" style="display: none;">
+                <label><input type="checkbox" name="weekDays" value="Mon">M</label>
+                <label><input type="checkbox" name="weekDays" value="Tue">T</label>
+                <label><input type="checkbox" name="weekDays" value="wed">W</label>
+                <label><input type="checkbox" name="weekDays" value="Thu">T</label>
+                <label><input type="checkbox" name="weekDays" value="Fri">F</label>
+                <label><input type="checkbox" name="weekDays" value="Sat">S</label>
+                <label><input type="checkbox" name="weekDays" value="Sun">S</label>
+              </div>
+              <label><input type="radio" name="repeatInterval" value="week"> Week</label>
+              <label><input type="radio" name="repeatInterval" value="month"> Month</label>
+              <label><input type="radio" name="repeatInterval" value="year"> Year</label>
+            </fieldset>
+          </div>
+          <fieldset>
+            <legend>Assign to</legend>
+            <div id="people" class="dayContainer">
+              <!-- Stuff goes here -->
+            </div>
+          </fieldset>
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+
+      <!-- Reminder Section -->
+      <div id="reminderSection" class="form-section" style="display: none;">
+        <div id="about">Reminders will let you know of an event, but will disappear once the date has passed. (Birthdays, etc.)</div>
+        <form id="reminderForm">
+          <input type="hidden" name="id">
+          <input type="text" name="title" placeholder="Title">
+          <input type="date" name="date" placeholder="Date">
+          <label><input type="checkbox" class="repeatCheckbox" name="repeat">Repeat</label>
+          <div id="fieldsetContainer" class="repeatFieldset">
+            <fieldset>
+              <legend>Repeat Interval</legend>
+              <label><input type="radio" class="dayRadio" name="repeatInterval" value="day"> Day</label>
+              <div id="weekDays" class="dayContainer" style="display: none;">
+                <label><input type="checkbox" name="weekDays" value="mon">M</label>
+                <label><input type="checkbox" name="weekDays" value="tue">T</label>
+                <label><input type="checkbox" name="weekDays" value="wed">W</label>
+                <label><input type="checkbox" name="weekDays" value="Thu">T</label>
+                <label><input type="checkbox" name="weekDays" value="Fri">F</label>
+                <label><input type="checkbox" name="weekDays" value="Sat">S</label>
+                <label><input type="checkbox" name="weekDays" value="Sun">S</label>
+              </div>
+              <label><input type="radio" name="repeatInterval" value="week"> Week</label>
+              <label><input type="radio" name="repeatInterval" value="month"> Month</label>
+              <label><input type="radio" name="repeatInterval" value="year"> Year</label>
+            </fieldset>
+          </div>
+          <fieldset>
+            <legend>Assign to</legend>
+            <div id="people" class="dayContainer">
+              <!-- Stuff goes here -->
+            </div>
+          </fieldset>
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+
+    <!-- To-Do Section -->
+    <div id="to-doSection" class="form-section" style="display: none;">
+      <div id="about">To-dos will show up in the reminder column, but need to be checked off before they disappear.</div>
+      <form id="todoForm">
+        <input type="text" name="title" placeholder="Title">
+        <select name="type" required>
+          <option value="" disabled selected hidden>Task Type</option>
+          <option value="event">Event</option>
+          <option value="bill">Bill</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="followUp">Follow Up</option>
+        </select>
+        <input type="date" name="date" placeholder="Date">
+        <label><input type="checkbox" class="repeatCheckbox" name="repeat">Repeat</label>
+        <div id="fieldsetContainer" class="repeatFieldset">
+          <fieldset>
+            <legend>Repeat Interval</legend>
+            <label><input type="radio" class="dayRadio" name="repeatInterval" value="day"> Day</label>
+            <div id="weekDays" class="dayContainer" style="display: none;">
+              <label><input type="checkbox" name="weekDays" value="mon">M</label>
+              <label><input type="checkbox" name="weekDays" value="tue">T</label>
+              <label><input type="checkbox" name="weekDays" value="wed">W</label>
+              <label><input type="checkbox" name="weekDays" value="Thu">T</label>
+              <label><input type="checkbox" name="weekDays" value="Fri">F</label>
+              <label><input type="checkbox" name="weekDays" value="Sat">S</label>
+              <label><input type="checkbox" name="weekDays" value="Sun">S</label>
+            </div>
+            <label><input type="radio" name="repeatInterval" value="week"> Week</label>
+            <label><input type="radio" name="repeatInterval" value="month"> Month</label>
+            <label><input type="radio" name="repeatInterval" value="year"> Year</label>
+          </fieldset>
+        </div>
+        <fieldset>
+          <legend>Assign to</legend>
+          <div id="people" class="dayContainer">
+            <!-- Stuff goes here -->
+          </div>
+        </fieldset>
+        <!-- Add inputs or a select for assignedTo -->
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+    <!-- To-do Section -->
+    <div id="dailySection" class="form-section" style="display: none;">
+      <div id="about">Simple daily tasks.</div>
+      <form id="dailyForm">
+        <input type="text" name="title" placeholder="Title">
+        <select name="type" required>
+          <option value="" disabled selected hidden>Task Type</option>
+          <option value="task">Task</option>
+          <option value="habit">Habit</option>
+          <option value="medication">Medication</option>
+        </select>
+        <input type="date" name="date" placeholder="Date">
+        <input type="time" name="time" placeholder="Time">
+        <fieldset>
+          <legend>Alarm</legend>
+          <label><input type="radio" class="alarmRadio" name="alarm" value="off"> Off</label>
+          <label><input type="radio" class="alarmRadio" name="alarm" value="chime"> Chime Once</label>
+          <label><input type="radio" class="alarmRadio" name="alarm" value="alarm"> Alarm</label>
+        </fieldset>
+          <label><input type="checkbox" class="repeatCheckbox" name="repeat">Repeat</label>
+        <div id="fieldsetContainer" class="repeatFieldset">
+          <fieldset>
+            <legend>Repeat Interval</legend>
+            <label><input type="radio" class="dayRadio" name="repeatInterval" value="day"> Day</label>
+            <div id="weekDays" class="dayContainer" style="display: none;">
+              <label><input type="checkbox" name="weekDays" value="mon">M</label>
+              <label><input type="checkbox" name="weekDays" value="tue">T</label>
+              <label><input type="checkbox" name="weekDays" value="wed">W</label>
+              <label><input type="checkbox" name="weekDays" value="Thu">T</label>
+              <label><input type="checkbox" name="weekDays" value="Fri">F</label>
+              <label><input type="checkbox" name="weekDays" value="Sat">S</label>
+              <label><input type="checkbox" name="weekDays" value="Sun">S</label>
+            </div>
+            <label><input type="radio" name="repeatInterval" value="week"> Week</label>
+            <label><input type="radio" name="repeatInterval" value="month"> Month</label>
+            <label><input type="radio" name="repeatInterval" value="year"> Year</label>
+          </fieldset>
+        </div>
+        <fieldset>
+          <legend>Assign to</legend>
+          <div id="people" class="dayContainer">
+            <!-- Stuff goes here -->
+          </div>
+        </fieldset>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+    <script>
+    function showSection(sectionId, buttonId) {
+      // Hide all sections
+      var sections = document.querySelectorAll('.form-section');
+      sections.forEach(function(section) {
+        section.style.display = 'none';
+      });
+
+      // Reset background color for all buttons
+      var buttons = document.querySelectorAll('.taskTypeButton');
+      buttons.forEach(function(button) {
+        button.style.backgroundColor = '';
+      });
+
+      // Show the selected section and set the background color for the selected button
+      document.getElementById(sectionId).style.display = 'block';
+      document.getElementById(buttonId).style.backgroundColor = '#006E46';
+    }
+
+    document.querySelectorAll('.taskTypeButton').forEach(function(button) {
+      button.addEventListener('click', function() {
+        var sectionId = button.id + 'Section';
+        showSection(sectionId, button.id);
+      });
+    });
+
+    document.querySelectorAll('.repeatCheckbox').forEach(function(checkbox) {
+      checkbox.addEventListener('change', function() {
+        var parentForm = this.closest('form');
+        var fieldset = parentForm.querySelector('.repeatFieldset');
+        var maxHeight = this.checked ? '1000px' : '0px';
+        fieldset.style.maxHeight = maxHeight;
+      });
+    });
+
+    document.querySelectorAll('input[name="repeatInterval"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        var parentForm = this.closest('fieldset');
+        var dayContainer = parentForm.querySelector('.dayContainer');
+
+        // Check if any 'dayRadio' button is checked within the same fieldset
+        var dayRadioChecked = Array.from(parentForm.querySelectorAll('.dayRadio')).some(function(dayRadio) {
+          return dayRadio.checked;
+        });
+
+        // Toggle display based on whether a 'dayRadio' is checked
+        dayContainer.style.display = dayRadioChecked ? 'flex' : 'none';
+        });
+    });
+
+    function fetchPeople() {
+    fetch('/get-people')
+    .then(response => response.json())
+    .then(people => {
+        // Select all divs with a specific class or ID
+        const containers = document.querySelectorAll('#people'); // Change the selector as needed
+
+        containers.forEach(container => {
+            container.innerHTML = ''; // Clear existing content for each container
+
+            people.forEach(person => {
+                const personDiv = document.createElement('div');
+                personDiv.id = `person-${person.id}`;
+                personDiv.className = 'fetchedPerson';
+                personDiv.innerHTML = `
+                    <label><input type="checkbox" name="assignPerson" value="${person.name}" data-id="${person.id}">${person.name}</label>
+                `;
+                container.appendChild(personDiv);
+            });
+        });
+    })
+      .catch(error => console.error('Error:', error));
+    }
+
+    fetchPeople();
+    </script>
+  </body>
+</html>

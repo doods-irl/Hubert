@@ -1,0 +1,265 @@
+<html>
+  <head>
+    <style>
+      @font-face {
+        font-family: 'Armin';
+        src: url('ArminSoft-Black.ttf') format('opentype');
+      }
+
+      body {
+        width: 100%;
+        background-color: #222;
+        margin: 0;
+        color: white;
+        font-family: 'Armin';
+      }
+
+      /* ===== Scrollbar CSS ===== */
+      /* Firefox */
+      * {
+        scrollbar-width: auto;
+        scrollbar-color: #333;
+      }
+
+      /* Chrome, Edge, and Safari */
+      *::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      *::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0);
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background-color: #333;
+        border-radius: 10px;
+      }
+
+      #typeButtons {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+        background-color: black;
+      }
+
+      .titleHeader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 90%;
+        height: 100px;
+        font-size: xx-large;
+        background-color: none;
+        text-decoration: none;
+        color: white;
+      }
+
+      .exitButton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 10%;
+        height: 100px;
+        font-size: xx-large;
+        background-color: none;
+        text-decoration: none;
+        color: transparent;
+        text-shadow: 0 0 rgb(0, 110, 70);
+        float: right;
+      }
+
+      .exitButton:hover {
+        background-color: #333;
+      }
+
+      input[type=text]
+      {
+        height: 2em;
+        border-radius: 20px;
+        font-size: inherit;
+        font-family: inherit;
+        color: white;
+        background-color: #333;
+        padding: 0 20px;
+        margin: 20px 0;
+        border: 3px solid #666;
+        width: 100%;
+      }
+      
+      form {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 3em;
+        padding: 0 5%;
+      }
+
+      button[type=submit] {
+        position: fixed;
+        bottom: 30px;
+        width: 80vw;
+        border-radius: 20px;
+        font-size: 4em;
+        font-family: inherit;
+        color: white;
+        background-color: #006E46;
+        padding: 10px;
+        margin: 20px auto;
+        border: none;
+        left: 50%;
+        translate: -50%;
+      }
+
+      button:hover {
+        filter: brightness(115%);
+      }
+
+      button[type=button] {
+        width: 80vw;
+        border-radius: 20px;
+        font-size: 4em;
+        font-family: inherit;
+        color: white;
+        background-color: #666;
+        padding: 10px;
+        margin: 30px auto;
+        border: none;
+      }
+
+      #peopleContainer {
+        font-size: 4em;
+      }
+
+      fieldset {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 20px;
+        font-size: 4em;
+      }
+
+      .fetchedPerson {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .fetchedPerson button {
+        border-radius: 20px;
+        font-size: medium;
+        font-family: inherit;
+        color: white;
+        background-color: #666;
+        padding: 10px;
+        border: none;
+        margin: 5px 0;
+        font-size: xx-large;
+      }
+
+    </style>
+  </head>
+  <body>  
+    <div id="typeButtons">
+      <div class="titleHeader">People</div>
+      <a href="/home.html" class="exitButton">✖️</a>
+    </div>
+    <form id="peopleForm">
+      <fieldset>
+        <legend>Current people</legend>
+        <div id="fetchedPeople"><div style="color: #777;">No one's here...</div></div>
+      </fieldset>
+      <div id="peopleContainer">
+        <input type="text" name="personName" placeholder="Name" id="nameField">
+      </div>
+      <button type="submit">Add Person</button>
+  </form>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchAndUpdatePeople();
+
+        //Handle enter keypress, because it breaks things if you don't use submit button
+        document.getElementById('nameField').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                // Trigger the form submission
+                document.getElementById('peopleForm').dispatchEvent(new Event('submit'));
+            }
+        }); 
+
+        //Submit button events
+        document.getElementById('peopleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var inputField = document.getElementById('nameField');
+        var name = inputField.value.trim();
+
+        if (name) {
+            fetch('/save-people', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify([name]) // Send the single name
+            })
+            .then(response => response.json())
+            .then(data => {
+                inputField.value = ''; // Clear only the submitted field
+                fetchAndUpdatePeople();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("Error saving people");
+            });
+        }
+    });
+    });
+
+    //Delete button events
+    function deletePerson(personId) {
+    fetch(`/delete-people/${personId}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+          const personDiv = document.getElementById(`person-${personId}`);
+          if (personDiv) {
+            personDiv.remove();
+            checkAndAppendText();
+          }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    //Fetch users and display them
+    function fetchAndUpdatePeople() {
+    fetch('/get-people')
+    .then(response => response.json())
+    .then(people => {
+      if (people && people.length > 0) {
+        const container = document.getElementById('fetchedPeople');
+        
+        container.innerHTML = ''; // Clear existing content
+
+        people.forEach(person => {
+            const personDiv = document.createElement('div');
+            personDiv.id = `person-${person.id}`;
+            personDiv.className = `fetchedPerson`;
+            personDiv.innerHTML = `
+                <span>${person.name}</span>
+                <button onclick="deletePerson('${person.id}')">Delete</button>
+            `;
+            container.appendChild(personDiv);
+        });
+      }
+    })
+    .catch(error => console.error('Error:', error));
+    }
+
+    //Text when people are deleted
+    function checkAndAppendText() {
+      const element = document.getElementById('fetchedPeople');
+      if (element && element.innerHTML.trim() === '') {
+        element.innerHTML = `<div style="color: #777;">No one's here...</div>`;
+      }
+    }
+</script>
+
+  </body>
+</html>
