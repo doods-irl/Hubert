@@ -1,5 +1,6 @@
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
     <style>
       @font-face {
         font-family: 'Armin';
@@ -40,16 +41,16 @@
         flex-direction: row;
         width: 100%;
         justify-content: center;
-        background-color: black;
+        background-color: #000
       }
 
       .navLink {
         display: flex;
         justify-content: center;
         align-items: center;
-        width: 22.5%;
-        height: 100px;
-        font-size: xx-large;
+        padding: 0 20px;
+        height: 70px;
+        font-size: clamp(1em, 4vw, 1.5em);
         background-color: none;
         text-decoration: none;
         color: white;
@@ -75,6 +76,62 @@
       .exitButton:hover {
         background-color: #333;
       }
+
+      #ContentContainer {
+        max-width: 650px;
+        margin: 0 auto;
+        font-size: x-large;
+      }
+
+      details {
+        background-color: #222;
+        border: 3px solid #666;
+        border-radius: 20px;
+        padding: 20px;
+        margin: 20px;
+      }
+
+      details:hover{
+        background-color: #333;
+      }
+
+      details[open], details[open]:hover{
+        background-color: #222;
+      }
+
+      h2 {
+        margin: 0;
+        font-weight: unset;
+      }
+
+      .task {
+        border-radius: 20px;
+        border: 3px solid #666;
+        padding: 10px 20px;
+        margin: 5px;
+        background-color: #222;
+        font-size: large;
+      }
+
+      .task:hover {
+        background-color: #333;
+      }
+
+      button {
+        background: 0;
+        border: 0;
+        font-size: inherit;
+        filter: grayscale(1);
+      }
+
+      button:hover{
+        filter: grayscale(0);
+      }
+
+      summary{
+        display: flex;
+        justify-content: space-between;
+      }
     </style>
   </head>
   <body>  
@@ -82,5 +139,152 @@
       <a href="/newtask.html" class="navLink">New task</a>
       <a href="/people.html" class="navLink">People</a>
     </div>
+    <div id="ContentContainer">
+      <details>
+      <summary>Alarms<div class="task-count">0</div></summary>
+        <div id="alarmSection" class="tasks"><span style="color: #666; display: block; text-align: center; margin: 20px;">No alarms to ring</span></div>
+    </details>
+    <details>
+      <summary>Reminders<div class="task-count">0</div></summary>
+        <div id="reminderSection" class="tasks"><span style="color: #666; display: block; text-align: center; margin: 20px;">No reminders to be reminded of</span></div>
+    </details>
+      <details>
+      <summary>To-Do<div class="task-count">0</div></summary>
+        <div id="todoSection" class="tasks"><span style="color: #666; display: block; text-align: center; margin: 20px;">No to-dos to do</span></div>
+    </details>
+    <details>
+      <summary>Daily<div class="task-count">0</div></summary>
+        <div id="dailySection" class="tasks"><span style="color: #666; display: block; text-align: center; margin: 20px;">No dailies today</span></div>
+    </details>
+    </div>
+
+    <script>
+    function fetchTasks() {
+    fetch('/get-tasks')
+    .then(response => response.json())
+    .then(tasks => {
+        if (tasks && Object.keys(tasks).length === 0) {
+            console.log("No Tasks!");
+        } else {
+            renderToPage(tasks);
+
+            for (const category in tasks) {
+                if (tasks[category].length === 0) {
+                    console.log(`No tasks in category: ${category}`);
+                } else {
+                    console.log(`Tasks in ${category}:`, tasks[category]);
+                }
+            }
+        }
+    })
+    .catch(error => console.error('Error:', error));
+  }
+
+  function renderToPage(tasks) {
+    // Define the mapping between task categories and section IDs
+    const categoryToSectionId = {
+        alarm: 'alarmSection',
+        reminder: 'reminderSection',
+        todo: 'todoSection',
+        daily: 'dailySection'
+    };
+
+    for (const category in tasks) {
+        const section = document.getElementById(categoryToSectionId[category]);
+        const details = section.closest('details');
+        const summary = details.querySelector('summary');
+
+        // Clear previous content
+        if (tasks[category].length > 0) {
+          section.innerHTML = '';
+        }
+
+        // Create elements for each task and append them to the section
+        tasks[category].forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            taskElement.id = `task-${task.taskId}`;
+
+            // Header
+            const headerElement = document.createElement('div');
+            headerElement.style.display = 'flex';
+            headerElement.style.justifyContent = 'space-between';
+            taskElement.appendChild(headerElement);
+
+            // Title
+            const titleElement = document.createElement('h2');
+            titleElement.textContent = task.title;
+            headerElement.appendChild(titleElement);
+
+            // Button
+            const deleteButton = document.createElement('div');
+            deleteButton.innerHTML = `<button onclick="deleteTask('${task.taskId}')">❌</button>`;
+            deleteButton.style.alignSelf = 'center';
+            headerElement.appendChild(deleteButton);
+
+            const detailElement = document.createElement('div');
+            detailElement.style.display = 'flex';
+            detailElement.style.flexDirection = 'column';
+            detailElement.style.color = '#666';
+            taskElement.appendChild(detailElement);
+
+            // Date
+            if (task.date) {
+                const dateElement = document.createElement('span');
+                dateElement.textContent = `Start: ${task.date}`;
+                detailElement.appendChild(dateElement);
+            }
+
+            // Time
+            if (task.time) {
+                const timeElement = document.createElement('span');
+                timeElement.textContent = `Time: ${task.time}`;
+                detailElement.appendChild(timeElement);
+            }
+
+            // Repeat Information
+            if (task.repeatType) {
+                const repeatElement = document.createElement('span');
+                repeatElement.textContent = `Repeats: ${task.repeatType}`;
+                detailElement.appendChild(repeatElement);
+            }
+
+            // Append the task element to the section
+            section.appendChild(taskElement);
+        });
+        updateCount(section);
+    }
+}
+
+function updateCount (section) {
+  const details = section.closest('details');
+  const taskCounter = details.querySelector('.task-count');
+  const taskDivs = section.querySelectorAll('div.task');
+  taskCounter.textContent = taskDivs.length;
+}
+
+    //Delete button events
+    function deleteTask(taskId) {
+    fetch(`/delete-task/${taskId}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+          const taskDiv = document.getElementById(`task-${taskId}`);
+          const taskDivParent = taskDiv.closest('div.tasks');
+          if (taskDiv) {
+            taskDiv.remove();
+            updateCount(taskDivParent);
+          }
+          const taskDivParentCount = taskDivParent.querySelectorAll('div.task');
+          console.log(taskDivParentCount.length);
+          if (taskDivParentCount.length === 0) {
+            taskDivParent.innerHTML = '<span style="color: #666; display: block; text-align: center; margin: 20px;">You deleted them all!</span>';
+          }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+
+    fetchTasks();
+    </script>
   </body>
 </html>
