@@ -141,13 +141,17 @@
         border-radius: 20px;
         font-size: medium;
         font-family: inherit;
-        color: white;
-        background-color: #666;
+        filter: grayscale(1);
+        background-color: rgba(0,0,0,0);
         padding: 10px;
         border: none;
         margin: 5px 0;
         font-size: inherit;
         line-height: 1em;
+      }
+
+      .fetchedPerson button:hover {
+        filter: grayscale(0);
       }
 
     </style>
@@ -237,7 +241,7 @@
             personDiv.className = `fetchedPerson`;
             personDiv.innerHTML = `
                 <span>${person.name}</span>
-                <button onclick="deletePerson('${person.id}')">Delete</button>
+                <button onclick="deletePerson('${person.id}')">❌</button>
             `;
             container.appendChild(personDiv);
         });

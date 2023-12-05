@@ -1,6 +1,44 @@
+const { ipcRenderer } = require('electron');
+
+ipcRenderer.on('tasks-updated', () => {
+  console.log("Tasks updated event received");
+  // Your code to handle the event
+});
+
+
+ipcRenderer.on('tasks-updated', async () => {
+  console.log("AAAAAAHHHHH");
+  await fetchProcessedTasks();
+  updateTaskDisplay();
+});
+
+function updateTaskDisplay() {
+  let daysContainer = document.getElementById('days-container');
+  daysContainer.innerHTML = ''; // Clear existing content
+  generateMonthDays(); // Regenerate days with updated tasks
+}
+
 var selectedDate;
 
-document.addEventListener('DOMContentLoaded', () => {
+var processedTasks = {};
+
+async function fetchProcessedTasks() {
+  try {
+    const response = await fetch('http://localhost:3000/get-processed-tasks'); // Adjust URL as needed
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    processedTasks = await response.json();
+
+    // Console log to check the fetched tasks
+    console.log('Fetched processed tasks:', processedTasks);
+  } catch (error) {
+    console.error('Fetch error:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await fetchProcessedTasks();
   generateMonthDays();
   scrollToCurrentDay();
 });
@@ -8,15 +46,28 @@ document.addEventListener('DOMContentLoaded', () => {
 function generateMonthDays() {
   let currentDate = new Date();
   let currentYear = currentDate.getFullYear();
-  let currentMonth = currentDate.getMonth(); // Note: January is 0
+  let currentMonth = currentDate.getMonth();
   let daysContainer = document.getElementById('days-container');
 
   let date = new Date(currentYear, currentMonth, 1);
   while (date.getMonth() === currentMonth) {
-      let dayElement = createDayElement(date);
-      daysContainer.appendChild(dayElement);
+      let pageElement = createPageContainer(date);
+      daysContainer.appendChild(pageElement);
       date.setDate(date.getDate() + 1);
   }
+}
+
+function createPageContainer(date) {
+  let pageContainer = document.createElement('div');
+  pageContainer.className = 'page-container';
+
+  let dayElement = createDayElement(date);
+  let laneContainer = createLaneContainer(date);
+
+  pageContainer.appendChild(dayElement);
+  pageContainer.appendChild(laneContainer);
+
+  return pageContainer;
 }
 
 function scrollToCurrentDay() {
@@ -36,6 +87,50 @@ function scrollToCurrentDay() {
   if (currentDayElement) {
     currentDayElement.scrollIntoView();
   }
+}
+
+function createLaneContainer(date) {
+  if (!date) {
+    console.error('createLaneContainer called without a date');
+    return document.createElement('div');
+  }
+
+  // Format the date as YYYY-MM-DD without converting to UTC
+  const formattedDate = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0')
+  ].join('-');
+
+  const laneContainer = document.createElement('div');
+  laneContainer.className = 'lane-container';
+
+  const lanes = ['alarm', 'reminder', 'todo', 'daily'];
+  lanes.forEach(lane => {
+    const laneDiv = document.createElement('div');
+    laneDiv.id = lane;
+    laneDiv.className = 'lane';
+    laneDiv.innerHTML = `<div class="lane-header">${lane.charAt(0).toUpperCase() + lane.slice(1)}</div>`;
+
+    // Add tasks to lane
+    const laneTasks = processedTasks[lane];
+    if (laneTasks) {
+      Object.values(laneTasks).forEach(tasks => {
+        tasks.forEach(task => {
+          if (task.date === formattedDate && !task.disabled && !task.dismissed) {
+            console.log(`Adding task to ${lane}:`, task, `Target date: ${formattedDate}`);
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            taskElement.textContent = task.title;
+            laneDiv.appendChild(taskElement);
+          }
+        });
+      });
+    }
+    laneContainer.appendChild(laneDiv);
+  });
+
+  return laneContainer;
 }
 
 
@@ -73,8 +168,7 @@ function createDayElement(date) {
 
     dayElement.insertBefore(timeSpan, dayElement.firstChild); // Insert at the beginning
   }
-
-  return dayElement;
+return dayElement;
 }
 
 function smoothScrollTo(element, duration) {
