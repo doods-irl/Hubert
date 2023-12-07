@@ -163,6 +163,7 @@
     fetch('/get-tasks')
     .then(response => response.json())
     .then(tasks => {
+      console.log(tasks);
         if (tasks && Object.keys(tasks).length === 0) {
             console.log("No Tasks!");
         } else {

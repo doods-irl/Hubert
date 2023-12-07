@@ -1,15 +1,22 @@
 const { ipcRenderer } = require('electron');
 
-ipcRenderer.on('tasks-updated', () => {
-  console.log("Tasks updated event received");
-  // Your code to handle the event
+// Function to send a request to the main process for processed tasks
+function requestProcessedTasks() {
+  console.log("Renderer: Requesting Tasks");
+  ipcRenderer.send('request-processed-tasks');
+}
+
+// Event listener for the response from the main process
+ipcRenderer.on('processed-tasks-response', (event, tasks) => {
+  console.log("Renderer: Receiving Tasks");
+  processedTasks = tasks;
+  updateTaskDisplay();
 });
 
-
+// Event listener for real-time updates
 ipcRenderer.on('tasks-updated', async () => {
-  console.log("AAAAAAHHHHH");
-  await fetchProcessedTasks();
-  updateTaskDisplay();
+  console.log("Renderer: Notified that tasks were updated");
+  requestProcessedTasks(); // Request updated tasks
 });
 
 function updateTaskDisplay() {
@@ -22,25 +29,11 @@ var selectedDate;
 
 var processedTasks = {};
 
-async function fetchProcessedTasks() {
-  try {
-    const response = await fetch('http://localhost:3000/get-processed-tasks'); // Adjust URL as needed
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    processedTasks = await response.json();
-
-    // Console log to check the fetched tasks
-    console.log('Fetched processed tasks:', processedTasks);
-  } catch (error) {
-    console.error('Fetch error:', error);
-  }
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
-  await fetchProcessedTasks();
+  let currentDate = new Date();
+  requestProcessedTasks();
   generateMonthDays();
-  scrollToCurrentDay();
+  scrollToDate(currentDate);
 });
 
 function generateMonthDays() {
@@ -70,17 +63,15 @@ function createPageContainer(date) {
   return pageContainer;
 }
 
-function scrollToCurrentDay() {
-  const currentDate = new Date();
-  selectedDate = currentDate;
-
+function scrollToDate(date) {
+  selectedDate = date;
   // Manually format the date to ensure it's in local time
-  const dateString = currentDate.getFullYear() + '-' +
-                     String(currentDate.getMonth() + 1).padStart(2, '0') + '-' +
-                     String(currentDate.getDate()).padStart(2, '0');
+  const dateString = date.getFullYear() + '-' +
+                     String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                     String(date.getDate()).padStart(2, '0');
 
   const currentDayElement = document.querySelector(`[data-date='${dateString}']`);
-  console.log('current date: ', currentDate);
+  console.log('current date: ', date);
   console.log('date string: ', dateString);
   console.log('current date element: ', currentDayElement);
 
@@ -95,7 +86,7 @@ function createLaneContainer(date) {
     return document.createElement('div');
   }
 
-  // Format the date as YYYY-MM-DD without converting to UTC
+  // Format the date as YYYY-MM-DD
   const formattedDate = [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, '0'),
@@ -105,24 +96,39 @@ function createLaneContainer(date) {
   const laneContainer = document.createElement('div');
   laneContainer.className = 'lane-container';
 
-  const lanes = ['alarm', 'reminder', 'todo', 'daily'];
+  const lanes = ['daily', 'todo', 'reminder', 'alarm'];
   lanes.forEach(lane => {
     const laneDiv = document.createElement('div');
     laneDiv.id = lane;
     laneDiv.className = 'lane';
-    laneDiv.innerHTML = `<div class="lane-header">${lane.charAt(0).toUpperCase() + lane.slice(1)}</div>`;
 
-    // Add tasks to lane
+    const laneHeader = document.createElement('div');
+    laneHeader.className = 'lane-header';
+    laneHeader.innerHTML = `${lane.charAt(0).toUpperCase() + lane.slice(1)}`;
+
+    const laneContent = document.createElement('div');
+    laneContent.className = 'lane-content';
+
+    laneDiv.appendChild(laneHeader);
+    laneDiv.appendChild(laneContent);
+
+    // Access the tasks for this lane
     const laneTasks = processedTasks[lane];
     if (laneTasks) {
-      Object.values(laneTasks).forEach(tasks => {
-        tasks.forEach(task => {
-          if (task.date === formattedDate && !task.disabled && !task.dismissed) {
+      Object.keys(laneTasks).forEach(taskId => {
+        const task = laneTasks[taskId];
+        task.recurrences.forEach(recurrence => {
+          if (recurrence.date === formattedDate && !recurrence.disabled && !recurrence.dismissed) {
             console.log(`Adding task to ${lane}:`, task, `Target date: ${formattedDate}`);
             const taskElement = document.createElement('div');
+            taskElement.setAttribute('data-taskid', `${recurrence.recurrenceId}`);
+            taskElement.setAttribute('data-tasktype', `${lane}`);
             taskElement.className = 'task';
-            taskElement.textContent = task.title;
-            laneDiv.appendChild(taskElement);
+            taskElement.innerHTML = `${task.title}<br>${task.time}`;
+            taskElement.addEventListener('click', () => {
+              markTaskAsCompleted(recurrence.recurrenceId, taskElement);
+            });
+            laneContent.appendChild(taskElement);
           }
         });
       });
@@ -133,6 +139,26 @@ function createLaneContainer(date) {
   return laneContainer;
 }
 
+function markTaskAsCompleted(recurrenceId, taskDiv) {
+  fetch(`http://localhost:3000/complete-task/${recurrenceId}`, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => {
+        if (taskDiv) {
+          const doneTick = document.createElement('div');
+          doneTick.className = "doneTick";
+          doneTick.innerHTML = '&#x2705;';
+          taskDiv.appendChild(doneTick);
+          taskDiv.style.transition = "height 0.3s, padding 0.3s, margin 0.3s";
+          setTimeout(() => {
+          taskDiv.style.height = "0px";
+          taskDiv.style.padding = "0px 20px";
+          taskDiv.style.margin = "0px 20px";
+          }, 600);
+          setTimeout(() => {taskDiv.remove();}, 2000);
+        }
+      })
+      .catch(error => console.error('Error:', error));
+  }
 
 function createDayElement(date) {
   let dayElement = document.createElement('div');

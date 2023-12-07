@@ -604,36 +604,36 @@ input[type=number]:hover::-webkit-inner-spin-button {
 
       // Form submission handler
       document.querySelectorAll('#formContainer form').forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-          // Check that at least one day is selected if the repeat type is "Selected Days"
-          var repeatTypeSelect = this.querySelector('select[name="repeatType"]');
-          if (repeatTypeSelect && repeatTypeSelect.value === 'selectedDays') {
-            var checkboxes = this.querySelectorAll('.dayContainer input[type="checkbox"]');
-            var isAnyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
-            if (!isAnyChecked) {
-              event.preventDefault(); // Prevent form submission
-              alert('Please selct the days you want it to repeat on!');
-              return;
-            }
-          }
+          form.addEventListener('submit', function(event) {
+              event.preventDefault();
 
-          // Bundle the form data into JSON
-          event.preventDefault();
-          let formData = {};
-          new FormData(this).forEach((value, key) => {
-            if (!formData[key]) {
-              formData[key] = value;
-            } else if (Array.isArray(formData[key])) {
-              formData[key].push(value);
-            } else {
-              formData[key] = [formData[key], value];
-            }
+              // Initialize formData object
+              let formData = {};
+
+              // Loop through each form element
+              new FormData(this).forEach((value, key) => {
+                  // If the element is not already in formData, add it
+                  if (!formData[key]) {
+                      formData[key] = value;
+                  }
+                  // If the element is already in formData and is an array, push the new value
+                  else if (Array.isArray(formData[key])) {
+                      formData[key].push(value);
+                  }
+                  // If the element is already in formData but not an array, convert it to an array and push the new value
+                  else {
+                      formData[key] = [formData[key], value];
+                  }
+              });
+
+              // Check for the repeatCheckbox and set its value in formData
+              const repeatCheckbox = this.querySelector('.repeatCheckbox');
+              formData['repeat'] = repeatCheckbox.checked ? 'on' : 'off';
+
+              let json = JSON.stringify(formData);
+              console.log(json);
+              saveTask(json);
           });
-
-          let json = JSON.stringify(formData);
-          console.log(json);
-          saveTask(json);
-        });
       });
     });
 

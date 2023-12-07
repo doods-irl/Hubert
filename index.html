@@ -8,6 +8,22 @@
       src: url('./assets/ArminSoft-Black.ttf') format('opentype');
     }
 
+::-webkit-scrollbar {
+  width: 8px;
+  height: 2px;
+}
+::-webkit-scrollbar-button {
+  width: 0px;
+  height: 0px;
+}
+::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 50px;
+  border: 2px solid #232e33;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
     body {
       background-color: #222;
@@ -37,6 +53,7 @@
       justify-content: center;
       align-items: center;
       text-align: center;
+      border-right: 3px solid #666;
     }
 
     .day-container .time {font-size: 4vw; line-height: 3vw;}
@@ -68,32 +85,100 @@
       width: 100%;
     }
 
-    .lane-container{
-      display: flex;
-      flex-direction: row;
-      width: 100%;
+    .lane-header {
+      padding: 20px;
+    }
+
+    #alarm .task {
+      height: 100px;
+      min-width: 100px;
+      border-radius: 20px;
+      margin: 0 8px;
+      padding: 20px;
+      background-color: tomato;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #daily .task, #reminder .task, #todo .task {
+      height: 100px;
+      border-radius: 20px;
+      margin: 5px 20px;
+      padding: 20px;
+      background-color: tomato;
+      position: relative;
+      overflow: hidden;
+      width: -webkit-fill-available;
+    }
+
+    .lane-container {
+      width: 100%; 
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 80% 20%;
+      gap: 3px 3px;
+      grid-auto-flow: row;
+      grid-template-areas:
+        "daily todo reminder"
+        "alarm alarm alarm";
+      background-color: #666;
     }
 
     .lane {
-      width: 25%;
+      background-color: #333;
     }
 
-    .lane-header {
+    #todo.lane { grid-area: todo; }
+    #daily.lane { grid-area: daily; }
+    #reminder.lane { grid-area: reminder; }
+    #alarm.lane { grid-area: alarm; }
+
+    #daily.lane, #todo.lane, #reminder.lane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #alarm .lane-content {
+      display: flex;
+      flex-direction: row;
+      overflow: scroll;
+      padding: 0 20px;
+    }
+
+    #daily .lane-content, #todo .lane-content, #reminder .lane-content {
+      overflow-y: scroll;
+      display: contents;
+      padding: 0px;
+    }
+
+    .doneTick{
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0px;
+      left: 0px;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 100%;
-      height: 50px;
-      border-bottom: 2px solid #666;
+      animation-name: doneTick;
+      animation-duration: 0.2s;
+      animation-iteration-count: 1;
+      animation-fill-mode: forwards;
+      animation-timing-function: ease-out;
     }
 
-    .task {
-      height: 100px;
-      border-radius: 20px;
-      margin: 15px;
-      padding: 20px;
-      background-color: tomato;
+    @keyframes doneTick {
+      from {
+        background-color: rgba(0,0,0,0.0);
+        font-size: 0px;
+      }
+      to {
+        background-color: rgba(0,0,0,0.5);
+        font-size: 70px;
+      }
     }
+
     </style>
 </head>
 <body>

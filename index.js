@@ -1,20 +1,12 @@
-const {
-  app: electronApp,
-  BrowserWindow,
-  ipcMain
-} = require('electron');
+const { app: electronApp, BrowserWindow, ipcMain } = require('electron');
 const moment = require('moment');
 const express = require('express');
 const path = require('path');
-const {
-  v4: uuidv4
-} = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const promises = fs.promises;
 const constants = fs.constants;
-const {
-  Mutex
-} = require('async-mutex');
+const { Mutex } = require('async-mutex');
 const mutex = new Mutex();
 
 let mainWindow;
@@ -69,6 +61,25 @@ electronApp.on("activate", () => {
     createWindow();
   }
 });
+
+ipcMain.on('request-processed-tasks', async (event) => {
+  console.log("Main: Tasks requested by renderer");
+  // await processTasks(); // Ensure tasks are processed
+  const processedTasks = await getProcessedTasks(); // Function to fetch processed tasks
+  event.reply('processed-tasks-response', processedTasks);
+});
+
+async function getProcessedTasks() {
+  const filePath = './store/tasks-processed.json';
+  try {
+    await fs.promises.access(filePath, constants.F_OK);
+    const data = await fs.promises.readFile(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error("Error fetching processed tasks:", err);
+    return {}; // Return empty object in case of an error
+  }
+}
 
 // Write people back to the json
 server.post('/save-people', async (req, res) => {
@@ -170,6 +181,55 @@ server.delete('/delete-people/:id', async (req, res) => {
   }
 });
 
+//Delete people from the JSON
+server.delete('/complete-task/:id', async (req, res) => {
+  console.log("Trying to complete a task");
+  const recurrenceId = req.params.id;
+
+  const release = await mutex.acquire();
+
+  try {
+    let data = await fs.promises.readFile('./store/tasks-processed.json', 'utf8');
+    let processedTasks = JSON.parse(data);
+
+    let taskFoundAndUpdated = false;
+    for (const category in processedTasks) {
+      for (const taskId in processedTasks[category]) {
+        const recurrences = processedTasks[category][taskId].recurrences;
+        for (const recurrence of recurrences) {
+          if (recurrence.recurrenceId === recurrenceId) {
+            recurrence.dismissed = true;
+            taskFoundAndUpdated = true;
+            break;
+          }
+        }
+        if (taskFoundAndUpdated) break;
+      }
+      if (taskFoundAndUpdated) break;
+    }
+
+    if (taskFoundAndUpdated) {
+      await fs.promises.writeFile('./store/tasks-processed.json', JSON.stringify(processedTasks, null, 2), 'utf8');
+      console.log("Recurrence with ID " + recurrenceId + " has been marked as dismissed.");
+      res.json({
+        message: 'Recurrence marked as dismissed successfully'
+      });
+    } else {
+      res.status(404).json({
+        message: 'Recurrence not found'
+      });
+    }
+  } catch (err) {
+    console.error("Error processing file", err);
+    res.status(500).json({
+      error: "Internal server error"
+    });
+  } finally {
+    release();
+  }
+});
+
+
 // TASK ACTIONS
 server.post('/save-task', async (req, res) => {
   const newTask = req.body;
@@ -220,7 +280,7 @@ server.get('/get-tasks', async (req, res) => {
 
   try {
     // Process tasks before fetching them
-    await processTasks();
+    console.log("/get-task route: processTasks called");
 
     // After processing, fetch and filter tasks
     const tasks = await checkFile(filePath, []);
@@ -274,6 +334,7 @@ server.delete('/delete-task/:id', async (req, res) => {
 
       // Process tasks after disabling the task
       await processTasks();
+      console.log("/delete-task route: processTasks called");
 
       res.json({
         message: 'Task disabled successfully'
@@ -299,23 +360,23 @@ server.get('/get-processed-tasks', async (req, res) => {
   const processedFilePath = './store/tasks-processed.json';
 
   try {
-    // Process tasks before fetching them
-    await processTasks();
+    // Fetch processed tasks
+    const processedTasks = await checkFile(processedFilePath, {});
+    console.log("/get-processed-tasks route: Responding with processed tasks");
 
-    // After processing, fetch processed tasks
-    const processedTasks = await checkFile(processedFilePath, []);
     const activeProcessedTasks = {};
-
-    // Iterate over each category and filter out disabled tasks
     Object.keys(processedTasks).forEach(category => {
       activeProcessedTasks[category] = {};
       Object.keys(processedTasks[category]).forEach(taskId => {
-        activeProcessedTasks[category][taskId] = processedTasks[category][taskId].filter(task => !task.disabled);
+        // Ensure that we are dealing with the recurrences array
+        const taskRecurrences = processedTasks[category][taskId].recurrences;
+        if (Array.isArray(taskRecurrences)) {
+          activeProcessedTasks[category][taskId] = taskRecurrences.filter(recurrence => !recurrence.disabled);
+        }
       });
     });
 
-    console.log(activeProcessedTasks);
-    res.json(activeProcessedTasks); // Send the processed tasks as response
+    res.json(activeProcessedTasks); // Send the filtered active processed tasks
   } catch (err) {
     console.error("Error accessing/reading file", err);
     res.status(500).json({
@@ -346,58 +407,68 @@ async function checkFile(filePath, initialContent = {}) {
 let lastProcessedTasks = {};
 
 async function processTasks() {
+  console.log("Processing tasks");
   const sourceFile = "./store/tasks.json";
   const destFile = "./store/tasks-processed.json";
   await checkFile(sourceFile);
   await checkFile(destFile);
 
   try {
-    // Read source file and destination file
     const sourceData = await promises.readFile(sourceFile, 'utf8');
     const destData = await promises.readFile(destFile, 'utf8');
     const tasks = JSON.parse(sourceData);
-    const processedTasks = JSON.parse(destData) || {};
+    let processedTasks = JSON.parse(destData) || {};
 
-    // Process tasks
     for (const category in tasks) {
+      if (!processedTasks[category]) {
+        processedTasks[category] = {};
+      }
+
       tasks[category].forEach(task => {
-        if (!task.disabled) {
-          const taskRepetitions = processTask(task);
-
-          // Ensure category and task ID exists in processedTasks
-          if (!processedTasks[category]) {
-            processedTasks[category] = {};
-          }
-          if (!processedTasks[category][task.taskId]) {
-            processedTasks[category][task.taskId] = [];
-          }
-
-          taskRepetitions.forEach(rep => {
-            // Check if the repetition already exists
-            if (!processedTasks[category][task.taskId].find(r => r.date === rep.date)) {
-              processedTasks[category][task.taskId].push({ ...rep, dismissed: false });
-            }
-          });
+        if (!processedTasks[category][task.taskId]) {
+          // Initialize the task in processedTasks
+          processedTasks[category][task.taskId] = {
+            title: task.title,
+            type: task.type,
+            time: task.time, // Ensure this property exists in your original tasks
+            taskId: task.taskId,
+            recurrences: []
+          };
         }
 
-        // If the original task is disabled, update all its repetitions in processedTasks
-        if (task.disabled && processedTasks[category] && processedTasks[category][task.taskId]) {
-          processedTasks[category][task.taskId].forEach(rep => rep.disabled = true);
+        if (task.repeat === 'off') {
+          addUniqueRecurrence(processedTasks[category][task.taskId].recurrences, task.date, task);
+        } else {
+          const taskRepetitions = processTask(task);
+          taskRepetitions.forEach(rep => {
+            addUniqueRecurrence(processedTasks[category][task.taskId].recurrences, rep.date, task);
+          });
         }
       });
     }
 
-    // Write to destination file
     await promises.writeFile(destFile, JSON.stringify(processedTasks, null, 2), 'utf8');
-
-    // Only send the message if there are changes
-    if (JSON.stringify(processedTasks) !== JSON.stringify(lastProcessedTasks)) {
+    const currentProcessedTasks = JSON.stringify(processedTasks);
+    if (currentProcessedTasks !== lastProcessedTasks) {
       sendTasksUpdatedMessage();
-      lastProcessedTasks = processedTasks; // Update the last processed tasks
+      lastProcessedTasks = currentProcessedTasks;
     }
   } catch (err) {
     console.error("Error accessing/reading file:", err);
-    throw err; // or handle it as needed
+    throw err;
+  }
+}
+
+function addUniqueRecurrence(recurrences, date, task) {
+  const existingRecurrence = recurrences.find(recurrence => recurrence.date === date);
+  if (!existingRecurrence) {
+    const newRecurrence = {
+      recurrenceId: uuidv4(),
+      date: date,
+      disabled: task.disabled,
+      dismissed: false
+    };
+    recurrences.push(newRecurrence);
   }
 }
 
@@ -427,8 +498,6 @@ function processTask(task) {
 
 
 function shouldContinueRepeating(task, currentDate, count) {
-  console.log("Current date in shouldContinueRepeating:", currentDate);
-
   if (!currentDate.isValid()) {
     console.error("Invalid date encountered in shouldContinueRepeating:", currentDate);
     return false;
@@ -461,13 +530,10 @@ function getNextOccurrenceDate(currentDate, repeatType) {
       break;
       // ... other cases ...
   }
-
-  console.log("Next occurrence date:", nextDate.format('YYYY-MM-DD'));
   return nextDate;
 }
 
 function sendTasksUpdatedMessage() {
-  console.log("Update sent!");
   if (mainWindow) {
     mainWindow.webContents.send('tasks-updated');
   }
