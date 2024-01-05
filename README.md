@@ -50,3 +50,9 @@ This task type will sound an alarm until dismissed e.g. Take pills, wake up
 - The "Reminder" task type has a task category called "Follow-up". When completed, this task category will prompt the user to create another task as an outcome of completing the first task (You completed a task to book an appointment? When's the appointment?)
 - I don't like the task done animation I got working, but the js that makes it work is fucking bonkers
 - Set timers directly on the Hub
+
+## How to try it out
+1. Download the files
+2. Do all the node installation stuff
+3. "npm start" to run the hub
+4. Connect to 127.0.0.1:3000 on the same machine for the task management interface, or grab the IP address of your device and go to [ipaddress]:3000 on another device on the local network
